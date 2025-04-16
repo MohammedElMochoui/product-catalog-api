@@ -1,0 +1,32 @@
+==== FILE: src/main/java/com/example/product_catalog_api/ProductCatalogApiApplication.java ====
+package com.example.product_catalog_api;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ProductCatalogApiApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ProductCatalogApiApplication.class, args);
+	}
+
+}
+
+==== FILE: src/main/resources/application.properties ====
+spring.application.name=product-catalog-api
+
+==== FILE: src/test/java/com/example/product_catalog_api/ProductCatalogApiApplicationTests.java ====
+package com.example.product_catalog_api;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class ProductCatalogApiApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

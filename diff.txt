@@ -1,0 +1,15 @@
+diff --git a/src/main/resources/application.yml b/src/main/resources/application.yml
+index dda3cb9..44937fd 100644
+--- a/src/main/resources/application.yml
++++ b/src/main/resources/application.yml
+@@ -1 +1,8 @@
+-spring.application.name=product-catalog-api
++spring:
++  application:
++    name: product-catalog-api
++
++  datasource:
++    url: jdbc:mysql://localhost:3306/catalog
++    username: ${DATABASE_USERNAME}
++    password: ${DATABASE_PASSWORD}
+\ No newline at end of file

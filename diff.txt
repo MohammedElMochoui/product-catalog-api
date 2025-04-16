@@ -1,15 +1,314 @@
+diff --git a/diff.txt b/diff.txt
+index b4b29d6..e69de29 100644
+--- a/diff.txt
++++ b/diff.txt
+@@ -1,15 +0,0 @@
+-diff --git a/src/main/resources/application.yml b/src/main/resources/application.yml
+-index dda3cb9..44937fd 100644
+---- a/src/main/resources/application.yml
+-+++ b/src/main/resources/application.yml
+-@@ -1 +1,8 @@
+--spring.application.name=product-catalog-api
+-+spring:
+-+  application:
+-+    name: product-catalog-api
+-+
+-+  datasource:
+-+    url: jdbc:mysql://localhost:3306/catalog
+-+    username: ${DATABASE_USERNAME}
+-+    password: ${DATABASE_PASSWORD}
+-\ No newline at end of file
+diff --git a/pom.xml b/pom.xml
+index e3e33ea..404a86f 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -38,6 +38,14 @@
+ 			<groupId>org.springframework.boot</groupId>
+ 			<artifactId>spring-boot-starter-web</artifactId>
+ 		</dependency>
++		<dependency>
++			<groupId>org.flywaydb</groupId>
++			<artifactId>flyway-core</artifactId>
++		</dependency>
++		<dependency>
++			<groupId>org.flywaydb</groupId>
++			<artifactId>flyway-mysql</artifactId>
++		</dependency>
+ 
+ 		<dependency>
+ 			<groupId>com.mysql</groupId>
+diff --git a/src/main/java/com/example/product_catalog_api/model/Category.java b/src/main/java/com/example/product_catalog_api/model/Category.java
+index fb77faa..c905505 100644
+--- a/src/main/java/com/example/product_catalog_api/model/Category.java
++++ b/src/main/java/com/example/product_catalog_api/model/Category.java
+@@ -1,4 +1,65 @@
+-package com.example.product_catalog_api.entity;
++package com.example.product_catalog_api.model;
+ 
++import jakarta.persistence.*;
++import org.hibernate.annotations.CreationTimestamp;
++import org.hibernate.annotations.UpdateTimestamp;
++
++import java.time.LocalDateTime;
++import java.util.Objects;
++
++@Entity
++@Table(name = "categories")
+ public class Category {
++    @Id
++    @GeneratedValue(strategy = GenerationType.IDENTITY)
++    Long id;
++
++    @Column(unique = true, nullable = false)
++    @Enumerated(EnumType.STRING)
++    CategoryEnum name;
++
++    @CreationTimestamp
++    LocalDateTime createdAt;
++    @UpdateTimestamp
++    LocalDateTime updatedAt;
++
++    public Category() {
++    }
++
++    public Category(CategoryEnum name) {
++        this.name = name;
++    }
++
++    public CategoryEnum getName() {
++        return name;
++    }
++
++    public void setName(CategoryEnum name) {
++        this.name = name;
++    }
++
++    public Long getId() {
++        return id;
++    }
++
++    public LocalDateTime getCreatedAt() {
++        return createdAt;
++    }
++
++    public LocalDateTime getUpdatedAt() {
++        return updatedAt;
++    }
++
++    @Override
++    public boolean equals(Object o) {
++        if (o == null || getClass() != o.getClass()) return false;
++
++        Category category = (Category) o;
++        return Objects.equals(id, category.id);
++    }
++
++    @Override
++    public int hashCode() {
++        return Objects.hashCode(id);
++    }
+ }
+diff --git a/src/main/java/com/example/product_catalog_api/model/CategoryEnum.java b/src/main/java/com/example/product_catalog_api/model/CategoryEnum.java
+index 3b72c4c..1585ad8 100644
+--- a/src/main/java/com/example/product_catalog_api/model/CategoryEnum.java
++++ b/src/main/java/com/example/product_catalog_api/model/CategoryEnum.java
+@@ -1,4 +1,10 @@
+ package com.example.product_catalog_api.model;
+ 
+ public enum CategoryEnum {
++    FIQH,
++    AQEEDAH,
++    SEERAH,
++    TAFSEER,
++    QURAN,
++    HADEETH
+ }
+diff --git a/src/main/java/com/example/product_catalog_api/model/Product.java b/src/main/java/com/example/product_catalog_api/model/Product.java
+index 9ea1ff1..6479b78 100644
+--- a/src/main/java/com/example/product_catalog_api/model/Product.java
++++ b/src/main/java/com/example/product_catalog_api/model/Product.java
+@@ -1,4 +1,4 @@
+-package com.example.product_catalog_api.entity;
++package com.example.product_catalog_api.model;
+ 
+ import jakarta.persistence.*;
+ import org.hibernate.annotations.CreationTimestamp;
+@@ -22,6 +22,10 @@ public class Product {
+ 
+     String description;
+ 
++    @ManyToOne(fetch = FetchType.LAZY)
++    @JoinColumn(name = "category_id")
++    Category category;
++
+     @CreationTimestamp
+     LocalDateTime createdAt;
+     @UpdateTimestamp
+@@ -83,4 +87,12 @@ public class Product {
+     public void setDescription(String description) {
+         this.description = description;
+     }
++
++    public Category getCategory() {
++        return category;
++    }
++
++    public void setCategory(Category category) {
++        this.category = category;
++    }
+ }
+diff --git a/src/main/java/com/example/product_catalog_api/repository/ProductRepository.java b/src/main/java/com/example/product_catalog_api/repository/ProductRepository.java
+index ca2a2d6..cd784e2 100644
+--- a/src/main/java/com/example/product_catalog_api/repository/ProductRepository.java
++++ b/src/main/java/com/example/product_catalog_api/repository/ProductRepository.java
+@@ -1,4 +1,9 @@
+ package com.example.product_catalog_api.repository;
+ 
+-public class ProductRepository {
++import com.example.product_catalog_api.model.Product;
++import org.springframework.data.jpa.repository.JpaRepository;
++import org.springframework.stereotype.Repository;
++
++@Repository
++public interface ProductRepository extends JpaRepository<Product, Long> {
+ }
 diff --git a/src/main/resources/application.yml b/src/main/resources/application.yml
-index dda3cb9..44937fd 100644
+index 44937fd..fd59bd7 100644
 --- a/src/main/resources/application.yml
 +++ b/src/main/resources/application.yml
-@@ -1 +1,8 @@
--spring.application.name=product-catalog-api
-+spring:
-+  application:
-+    name: product-catalog-api
-+
-+  datasource:
-+    url: jdbc:mysql://localhost:3306/catalog
-+    username: ${DATABASE_USERNAME}
-+    password: ${DATABASE_PASSWORD}
+@@ -5,4 +5,13 @@ spring:
+   datasource:
+     url: jdbc:mysql://localhost:3306/catalog
+     username: ${DATABASE_USERNAME}
+-    password: ${DATABASE_PASSWORD}
 \ No newline at end of file
++    password: ${DATABASE_PASSWORD}
++    driver-class-name: com.mysql.cj.jdbc.Driver # Good practice to be explicit
++
++  jpa:
++    hibernate:
++      ddl-auto: validate
++
++  flyway:
++    enabled: true
++    locations: classpath:db/migration
+\ No newline at end of file
+diff --git a/src/main/resources/db/migration/V2__Insert_initial_products.sql b/src/main/resources/db/migration/V2__Insert_initial_products.sql
+index 6187f1f..aaeaee1 100644
+--- a/src/main/resources/db/migration/V2__Insert_initial_products.sql
++++ b/src/main/resources/db/migration/V2__Insert_initial_products.sql
+@@ -1,2 +1,4 @@
+-ALTER TABLE products
+-ADD COLUMN 
+\ No newline at end of file
++INSERT INTO products(name, price) VALUES
++    ("Belangrijke lessen voor de gehele gemeenschap", 7.5),
++    ("Een blik op het karakter van de edele boodschapper", 5.66),
++    ("Uitleg van de geloofsleer- Sharh as-soennah", 6.66);
+\ No newline at end of file
+diff --git a/src/main/resources/db/migration/V3__Make_product_name_unique.sql b/src/main/resources/db/migration/V3__Make_product_name_unique.sql
+index e69de29..442d097 100644
+--- a/src/main/resources/db/migration/V3__Make_product_name_unique.sql
++++ b/src/main/resources/db/migration/V3__Make_product_name_unique.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE products
++    ADD UNIQUE (name);
+\ No newline at end of file
+diff --git a/src/main/resources/db/migration/V4__Add_description_to_products.sql b/src/main/resources/db/migration/V4__Add_description_to_products.sql
+index e69de29..777232e 100644
+--- a/src/main/resources/db/migration/V4__Add_description_to_products.sql
++++ b/src/main/resources/db/migration/V4__Add_description_to_products.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE products
++    ADD COLUMN description TEXT;
+\ No newline at end of file
+diff --git a/src/main/resources/db/migration/V5__Add_description_to_initialized_products.sql b/src/main/resources/db/migration/V5__Add_description_to_initialized_products.sql
+index e69de29..89733bc 100644
+--- a/src/main/resources/db/migration/V5__Add_description_to_initialized_products.sql
++++ b/src/main/resources/db/migration/V5__Add_description_to_initialized_products.sql
+@@ -0,0 +1,36 @@
++UPDATE products
++SET description = ("Dit specifieke boek komt daarom niet in aanmerking voor betaling in termijnen.
++
++                    Je kunt het uiteraard wél toevoegen aan je bestelling samen met andere boeken die wél op afbetaling beschikbaar zijn.
++
++                    In dit boekje Belangrijke lessen voor de gehele gemeenschap van de voormalige moefti van Saoedi-Arabië, shaykh al islaam ‘Abdul-‘Aziez Ibn Baaz, leert de lezer op beknopte wijze de fundamenten van de religie. De Shaykh tracht op een simpele, begrijpelijke manier de verplichte kennis te verduidelijken betreffende onder andere:
++
++                    -de pilaren van islaam & imaan
++                    -de vormen van Tawhied
++                    -hoofdstukken uit de Qoraan
++                    -de reiniging
++                    -het gebed
++                    -de islamitische karaktereigenschappen
++                    -afgoderij en verschillende zonden
++                    -de regelgevingen met betrekking tot de dodenwassing en het dodengebed")
++WHERE id = 1;
++UPDATE products
++SET description = ("Elke moslim zal zeggen van de Profeet Mohammed (vrede en zegeningen zij met hem) te houden. Maar wie was hij? Waarom werd hij naar ons gezonden? Hoe was zijn karakter?
++
++                    De Profeet Mohammed (vrede en zegeningen zij met hem) werd als voorbeeld naar de mensheid gestuurd. Het eigen maken van zijn karakter moet ons streven zijn. Maar wat weet je eigenlijk van zijn karakter? Om je daarbij te helpen hebben wij van Ibn Baaz Bookstore het gerenommeerde boek ‘Een blik op het karakter van de edele Boodschapper’ van de prominente geleerde ‘Abdoel-Mohsin al-‘Abbaad naar helder Nederlands vertaald
++
++                    Op bovenstaande vragen en veel meer geeft shaykh ‘Abdoel-Mohsin al-‘Abbaad een antwoord in dit prachtige boek. Een must-have voor elke moslim, en een aanrader voor nieuwe moslims of mensen die geïnteresseerd zijn in de islaam.
++
++")
++WHERE id = 2;
++UPDATE products
++SET description = ("De klassieker van een van de vroege hanbalie-geleerden, nu voor het eerst in het Nederlands verkrijgbaar.
++
++                    Ontdek een van de belangrijkste werken uit de islamitische geschiedenis omtrent de geloofsleer. Uitleg van de geloofsleer (Ar. Sharh as-soennah) legt het verschil tussen de zuivere soennah en innovaties in heldere taal uit, met veel voorbeelden die voor de hedendaagse lezer herkenbaar zullen zijn. Het toont aan dat de geloofsleer van de grote imaams van de vier wetscholen één was, en meningsverschillen alleen in fiqh-kwesties kunnen bestaan. Dit boek is een nekslag voor de mensen van innovaties en degenen die de zuivere geloofsleer willen vermengen met leringen die niet voortkomen uit de soennah van de Profeet (sallallaahoe alaihi wasallam).
++
++                    In dit boek zijn verschillende verhelderende voetnoten toegevoegd die ontleend zijn aan de uitleggen van grote geleerden zoals shaykh Saalih al-Fawzaan en shaykh Ahmed an-Nadjmie. Daarnaast zijn er voetnoten toegevoegd van shaykh Khaalid ar-Raddaadie, die de inhoud van het boek geverifieerd heeft.
++
++                    Over de auteur: Al-Barbahaarie (overl. 4de eeuw na hidjrah/10de eeuw n. Chr.) was een leerling van studenten van imaam Ahmed bin Hanbal, en hij behoort dan ook tot een van de belangrijkste hanbalie-geleerden. Hij leefde in dezelfde tijd als de grote imaams, van wie hij hun zuivere geloofsleer overnam. Hij stond bekend om het verdedigen van de geloofsleer van de selef, en het bestrijden van dwalende groeperingen middels correcte kennis. Waar hij kwam was hij populair onder het volk, en onder zijn leringen werden zonden en innovaties massaal bestreden.
++
++")
++WHERE id = 3;
+diff --git a/src/main/resources/db/migration/V6__Create_category_table.sql b/src/main/resources/db/migration/V6__Create_category_table.sql
+index e69de29..86ba4df 100644
+--- a/src/main/resources/db/migration/V6__Create_category_table.sql
++++ b/src/main/resources/db/migration/V6__Create_category_table.sql
+@@ -0,0 +1,7 @@
++CREATE TABLE categories (
++    id BIGINT AUTO_INCREMENT PRIMARY KEY,
++    name VARCHAR(255) UNIQUE NOT NULL,
++
++    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
++    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
++);
+\ No newline at end of file
+diff --git a/src/main/resources/db/migration/V7__Insert_initial_categories.sql b/src/main/resources/db/migration/V7__Insert_initial_categories.sql
+index e69de29..f68911b 100644
+--- a/src/main/resources/db/migration/V7__Insert_initial_categories.sql
++++ b/src/main/resources/db/migration/V7__Insert_initial_categories.sql
+@@ -0,0 +1,7 @@
++INSERT INTO categories(name) values
++    ("FIQH"),
++    ("AQEEDAH"),
++    ("SEERAH"),
++    ("TAFSEER"),
++    ("QURAN"),
++    ("HADEETH");
+diff --git a/src/main/resources/db/migration/V8__Add_category_fk_to_product_table.sql b/src/main/resources/db/migration/V8__Add_category_fk_to_product_table.sql
+index e69de29..f0bf47a 100644
+--- a/src/main/resources/db/migration/V8__Add_category_fk_to_product_table.sql
++++ b/src/main/resources/db/migration/V8__Add_category_fk_to_product_table.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE products
++ADD COLUMN category_id BIGINT;
+\ No newline at end of file
+diff --git a/src/main/resources/db/migration/V9__Update_initialized_products_with_fk.sql b/src/main/resources/db/migration/V9__Update_initialized_products_with_fk.sql
+index e69de29..abc3e68 100644
+--- a/src/main/resources/db/migration/V9__Update_initialized_products_with_fk.sql
++++ b/src/main/resources/db/migration/V9__Update_initialized_products_with_fk.sql
+@@ -0,0 +1,11 @@
++UPDATE products
++SET category_id = (SELECT c.id from categories c where c.name = 'AQEEDAH')
++where id = 1;
++
++UPDATE products
++SET category_id = (SELECT c.id from categories c where c.name = 'AQEEDAH')
++where id = 2;
++
++UPDATE products
++SET category_id = (SELECT c.id from categories c where c.name = 'AQEEDAH')
++where id = 3;

@@ -34,9 +34,11 @@ public class Product {
     public Product() {
     }
 
-    public Product(BigDecimal price, String name) {
-        this.price = price;
+    public Product(String name, BigDecimal price, Category category, String description) {
         this.name = name;
+        this.price = price;
+        this.category = category;
+        this.description = description;
     }
 
     public String getName() {

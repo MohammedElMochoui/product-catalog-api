@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+diff.txt
+full_code_dump.txt

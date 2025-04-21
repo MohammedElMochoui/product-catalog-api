@@ -2,10 +2,7 @@ package com.example.product_catalog_api.controller;
 
 import com.example.product_catalog_api.DTO.request.CreateProductRequestDTO;
 import com.example.product_catalog_api.DTO.request.UpdateProductRequestDTO;
-import com.example.product_catalog_api.DTO.response.CreateProductResponseDTO;
-import com.example.product_catalog_api.DTO.response.DeleteProductResponseDTO;
-import com.example.product_catalog_api.DTO.response.GetProductResponseDTO;
-import com.example.product_catalog_api.DTO.response.UpdateProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.*;
 import com.example.product_catalog_api.exception.AllFieldsAreNullException;
 import com.example.product_catalog_api.service.ProductService;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 
 @RestController
-@RequestMapping("product")
+@RequestMapping("products")
 public class ProductController {
     private final ProductService productService;
 
@@ -22,21 +19,21 @@ public class ProductController {
         this.productService = productService;
     }
 
+    @GetMapping("/{id}")
+    ResponseEntity<GetProductResponseDTO> getProductById(@PathVariable Long id) {
+        GetProductResponseDTO result = productService.getProduct(id);
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping
-    ResponseEntity<?> getAllProducts(
-            @RequestParam(name = "id", required = false) Long id,
-            @RequestParam(name = "name", required = false) String name
-    ) {
-        Object result = null;
+    ResponseEntity<GetProductsResponseDTO> getAllProducts() {
+        GetProductsResponseDTO result = productService.getAllProducts();
+        return ResponseEntity.ok(result);
+    }
 
-        if (id != null) {
-            result = productService.getProduct(id);
-        } else if (name != null && !name.isBlank()) {
-            result = productService.getProduct(name);
-        } else {
-            result = productService.getAllProducts();
-        }
-
+    @GetMapping
+    ResponseEntity<GetProductResponseDTO> getProductByName(@RequestParam(name = "name") String name) {
+        GetProductResponseDTO result = productService.getProduct(name);
         return ResponseEntity.ok(result);
     }
 

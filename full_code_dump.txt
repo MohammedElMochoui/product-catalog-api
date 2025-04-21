@@ -1,3 +1,392 @@
+==== FILE: src/main/java/com/example/product_catalog_api/repository/CategoryRepository.java ====
+package com.example.product_catalog_api.repository;
+
+import com.example.product_catalog_api.model.Category;
+import com.example.product_catalog_api.model.CategoryEnum;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface CategoryRepository extends JpaRepository<Category, Long> {
+    Optional<Category> findByName(CategoryEnum name);
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/repository/ProductRepository.java ====
+package com.example.product_catalog_api.repository;
+
+import com.example.product_catalog_api.model.Product;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface ProductRepository extends JpaRepository<Product, Long> {
+    Optional<Product> findByName(String name);
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/service/ProductService.java ====
+package com.example.product_catalog_api.service;
+
+import com.example.product_catalog_api.DTO.response.*;
+import com.example.product_catalog_api.exception.CantFindCategoryException;
+import com.example.product_catalog_api.exception.CantFindProductException;
+import com.example.product_catalog_api.mapper.ProductMapper;
+import com.example.product_catalog_api.model.Category;
+import com.example.product_catalog_api.model.CategoryEnum;
+import com.example.product_catalog_api.model.Product;
+import com.example.product_catalog_api.repository.CategoryRepository;
+import com.example.product_catalog_api.repository.ProductRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Service
+@Transactional
+public class ProductService {
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductMapper productMapper;
+
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, ProductMapper productMapper) {
+        this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
+        this.productMapper = productMapper;
+    }
+
+    @Transactional(readOnly = true)
+    public GetProductsResponseDTO getAllProducts(){
+        List<Product> products = productRepository.findAll();
+        List<GetProductResponseDTO> responses = products.stream().map(productMapper::productToGetProductResponseDTO).toList();
+        return new GetProductsResponseDTO(responses.size(), responses);
+    }
+
+    @Transactional(readOnly = true)
+    public GetProductResponseDTO getProduct(Long id) {
+        Product p = productRepository.findById(id)
+                .orElseThrow(() -> CantFindProductException.create(id));
+        return productMapper.productToGetProductResponseDTO(p);
+    }
+
+    @Transactional(readOnly = true)
+    public GetProductResponseDTO getProduct(String name) {
+        Product p = productRepository.findByName(name)
+                .orElseThrow(() -> CantFindProductException.create(name));
+        return productMapper.productToGetProductResponseDTO(p);
+    }
+
+    public CreateProductResponseDTO createProduct(String name, BigDecimal price, CategoryEnum category, String description) {
+        Category c = categoryRepository.findByName(category)
+                .orElseThrow(() -> CantFindCategoryException.create(category));
+        Product p = new Product(name, price, c, description);
+        Product savedProduct = productRepository.save(p);
+        return productMapper.productToCreateProductResponseDTO(savedProduct);
+    }
+
+    public UpdateProductResponseDTO updateProduct(Long id, BigDecimal price, String description){
+        Product p = productRepository.findById(id)
+                .orElseThrow(() -> CantFindProductException.create(id));
+
+        if (price != null)
+            p.setPrice(price);
+
+        if (description != null)
+            p.setDescription(description);
+
+        return productMapper.productToUpdateProductResponseDTO(p);
+    }
+
+    public DeleteProductResponseDTO deleteProduct(Long id) {
+        Product p = productRepository.findById(id)
+                .orElseThrow(() -> CantFindProductException.create(id));
+
+        productRepository.delete(p);
+        return productMapper.productToDeleteProductResponseDTO(p);
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/model/Category.java ====
+package com.example.product_catalog_api.model;
+
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+@Entity
+@Table(name = "categories")
+public class Category {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+
+    @Column(unique = true, nullable = false)
+    @Enumerated(EnumType.STRING)
+    CategoryEnum name;
+
+    @CreationTimestamp
+    LocalDateTime createdAt;
+    @UpdateTimestamp
+    LocalDateTime updatedAt;
+
+    public Category() {
+    }
+
+    public Category(CategoryEnum name) {
+        this.name = name;
+    }
+
+    public CategoryEnum getName() {
+        return name;
+    }
+
+    public void setName(CategoryEnum name) {
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Category category = (Category) o;
+        return Objects.equals(id, category.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/model/CategoryEnum.java ====
+package com.example.product_catalog_api.model;
+
+public enum CategoryEnum {
+    FIQH,
+    AQEEDAH,
+    SEERAH,
+    TAFSEER,
+    QURAN,
+    HADEETH
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/model/Product.java ====
+package com.example.product_catalog_api.model;
+
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+@Entity
+@Table(name = "products")
+public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+
+    @Column(nullable = false, unique = true)
+    String name;
+    @Column(nullable = false)
+    BigDecimal price;
+
+    String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    Category category;
+
+    @CreationTimestamp
+    LocalDateTime createdAt;
+    @UpdateTimestamp
+    LocalDateTime updatedAt;
+
+    public Product() {
+    }
+
+    public Product(String name, BigDecimal price, Category category, String description) {
+        this.name = name;
+        this.price = price;
+        this.category = category;
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Product product = (Product) o;
+        return Objects.equals(id, product.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/ErrorDetails.java ====
+package com.example.product_catalog_api;
+
+public record ErrorDetails(
+        int statucode,
+        String message,
+        String details
+) {
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/response/CreateProductResponseDTO.java ====
+package com.example.product_catalog_api.DTO.response;
+
+import com.example.product_catalog_api.model.CategoryEnum;
+
+import java.math.BigDecimal;
+
+public record CreateProductResponseDTO(
+        Long id,
+        String name,
+        BigDecimal price,
+        CategoryEnum category
+) {
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/response/GetProductsResponseDTO.java ====
+package com.example.product_catalog_api.DTO.response;
+
+import java.util.List;
+
+public record GetProductsResponseDTO(
+        int count,
+        List<GetProductResponseDTO> products
+){
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/response/GetProductResponseDTO.java ====
+package com.example.product_catalog_api.DTO.response;
+
+import com.example.product_catalog_api.model.CategoryEnum;
+
+import java.math.BigDecimal;
+
+public record GetProductResponseDTO(
+        Long id,
+        String name,
+        BigDecimal price,
+        CategoryEnum category
+) {
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/response/DeleteProductResponseDTO.java ====
+package com.example.product_catalog_api.DTO.response;
+
+public record DeleteProductResponseDTO(
+        Long id,
+        String name
+) {
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/response/UpdateProductResponseDTO.java ====
+package com.example.product_catalog_api.DTO.response;
+
+public record UpdateProductResponseDTO(
+        Long id,
+        String name
+) {
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/request/CreateProductRequestDTO.java ====
+package com.example.product_catalog_api.DTO.request;
+
+import com.example.product_catalog_api.model.CategoryEnum;
+
+import java.math.BigDecimal;
+
+public record CreateProductRequestDTO(
+        String name,
+        BigDecimal price,
+        String description,
+        CategoryEnum category
+) {
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/DTO/request/UpdateProductRequestDTO.java ====
+package com.example.product_catalog_api.DTO.request;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.math.BigDecimal;
+
+public record UpdateProductRequestDTO(
+        BigDecimal price,
+        String description
+) {
+}
+
 ==== FILE: src/main/java/com/example/product_catalog_api/ProductCatalogApiApplication.java ====
 package com.example.product_catalog_api;
 
@@ -13,8 +402,326 @@ public class ProductCatalogApiApplication {
 
 }
 
-==== FILE: src/main/resources/application.properties ====
-spring.application.name=product-catalog-api
+==== FILE: src/main/java/com/example/product_catalog_api/exception/CantFindProductException.java ====
+package com.example.product_catalog_api.exception;
+
+
+import com.example.product_catalog_api.model.Category;
+import com.example.product_catalog_api.model.CategoryEnum;
+import com.example.product_catalog_api.model.Product;
+
+public class CantFindProductException extends RuntimeException{
+    public CantFindProductException(String message) {
+        super(message);
+    }
+
+    public static CantFindProductException create(Long id) {
+        String message = "Cannot find product with id: " + id;
+        return new CantFindProductException(message);
+    }
+
+    public static CantFindProductException create(String name) {
+        String message = "Cannot find product with name: " + name;
+        return new CantFindProductException(message);
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/exception/AllFieldsAreNullException.java ====
+package com.example.product_catalog_api.exception;
+
+public class AllFieldsAreNullException extends RuntimeException {
+    public AllFieldsAreNullException(String message) {
+        super(message);
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/exception/CantFindCategoryException.java ====
+package com.example.product_catalog_api.exception;
+
+
+import com.example.product_catalog_api.model.Category;
+import com.example.product_catalog_api.model.CategoryEnum;
+
+public class CantFindCategoryException extends RuntimeException{
+    public CantFindCategoryException(String message) {
+        super(message);
+    }
+
+    public static CantFindCategoryException create(CategoryEnum c) {
+        String message = "Cannot find category with name: " + c.name();
+        return new CantFindCategoryException(message);
+    }
+
+    public static CantFindCategoryException create(Category c) {
+        String message = "Cannot find category with name: " + c.getName();
+        return new CantFindCategoryException(message);
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/controller/ProductController.java ====
+package com.example.product_catalog_api.controller;
+
+import com.example.product_catalog_api.DTO.request.CreateProductRequestDTO;
+import com.example.product_catalog_api.DTO.request.UpdateProductRequestDTO;
+import com.example.product_catalog_api.DTO.response.CreateProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.DeleteProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.GetProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.UpdateProductResponseDTO;
+import com.example.product_catalog_api.exception.AllFieldsAreNullException;
+import com.example.product_catalog_api.service.ProductService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+
+@RestController
+@RequestMapping("product")
+public class ProductController {
+    private final ProductService productService;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @GetMapping
+    ResponseEntity<?> getAllProducts(
+            @RequestParam(name = "id", required = false) Long id,
+            @RequestParam(name = "name", required = false) String name
+    ) {
+        Object result = null;
+
+        if (id != null) {
+            result = productService.getProduct(id);
+        } else if (name != null && !name.isBlank()) {
+            result = productService.getProduct(name);
+        } else {
+            result = productService.getAllProducts();
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}")
+    ResponseEntity<GetProductResponseDTO> getProduct(@PathVariable Long id) {
+        GetProductResponseDTO getProductResponseDTO = productService.getProduct(id);
+        return ResponseEntity.ok(getProductResponseDTO);
+    }
+
+    @PostMapping
+    ResponseEntity<CreateProductResponseDTO> createProduct(@RequestBody CreateProductRequestDTO body) {
+        CreateProductResponseDTO createProductResponseDTO = productService.createProduct(body.name(), body.price(), body.category(), body.description());
+        URI location = URI.create("product/" + createProductResponseDTO.id());
+        return ResponseEntity.created(location).body(createProductResponseDTO);
+    }
+
+    @PatchMapping("/{id}")
+    ResponseEntity<UpdateProductResponseDTO> updateProduct(@PathVariable Long id, @RequestBody UpdateProductRequestDTO body) {
+        if (body.price() == null && body.description() == null)
+            throw new AllFieldsAreNullException("Both price and description are null!");
+
+        UpdateProductResponseDTO updateProductResponseDTO = productService.updateProduct(id, body.price(), body.description());
+        return ResponseEntity.ok(updateProductResponseDTO);
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<DeleteProductResponseDTO> deleteProduct(@PathVariable Long id) {
+        DeleteProductResponseDTO deleteProductResponseDTO = productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/GlobalExceptionHandler.java ====
+package com.example.product_catalog_api;
+
+import com.example.product_catalog_api.exception.AllFieldsAreNullException;
+import com.example.product_catalog_api.exception.CantFindCategoryException;
+import com.example.product_catalog_api.exception.CantFindProductException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(CantFindCategoryException.class)
+    ResponseEntity<ErrorDetails> handleCantFindCategoryException(CantFindCategoryException ex, WebRequest request) {
+        ErrorDetails err = new ErrorDetails(HttpStatus.NOT_FOUND.value(), ex.getMessage(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+    }
+
+    @ExceptionHandler(CantFindProductException.class)
+    ResponseEntity<ErrorDetails> handleCantFindProductException(CantFindProductException ex, WebRequest request) {
+        ErrorDetails err = new ErrorDetails(HttpStatus.NOT_FOUND.value(), ex.getMessage(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+    }
+
+    @ExceptionHandler(AllFieldsAreNullException.class)
+    ResponseEntity<ErrorDetails> handleAllFieldsAreNullException(AllFieldsAreNullException ex, WebRequest request) {
+        ErrorDetails err = new ErrorDetails(HttpStatus.NOT_FOUND.value(), ex.getMessage(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
+    }
+}
+
+==== FILE: src/main/java/com/example/product_catalog_api/mapper/ProductMapper.java ====
+package com.example.product_catalog_api.mapper;
+
+import com.example.product_catalog_api.DTO.request.CreateProductRequestDTO;
+import com.example.product_catalog_api.DTO.response.CreateProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.DeleteProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.GetProductResponseDTO;
+import com.example.product_catalog_api.DTO.response.UpdateProductResponseDTO;
+import com.example.product_catalog_api.model.Product;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
+
+@Mapper(componentModel = "spring")
+public interface ProductMapper {
+
+    ProductMapper INSTANCE = Mappers.getMapper(ProductMapper.class);
+
+    Product createProductRequestDTOtoProduct(CreateProductRequestDTO createProductRequestDTO);
+
+    @Mapping(source = "category.name", target = "category")
+    CreateProductResponseDTO productToCreateProductResponseDTO(Product p);
+
+    @Mapping(source = "category.name", target = "category")
+    GetProductResponseDTO productToGetProductResponseDTO(Product p);
+
+    UpdateProductResponseDTO productToUpdateProductResponseDTO(Product p);
+    DeleteProductResponseDTO productToDeleteProductResponseDTO(Product p);
+}
+
+==== FILE: src/main/resources/db/migration/V9__Update_initialized_products_with_fk.sql ====
+UPDATE products
+SET category_id = (SELECT c.id from categories c where c.name = 'AQEEDAH')
+where id = 1;
+
+UPDATE products
+SET category_id = (SELECT c.id from categories c where c.name = 'AQEEDAH')
+where id = 2;
+
+UPDATE products
+SET category_id = (SELECT c.id from categories c where c.name = 'AQEEDAH')
+where id = 3;
+
+==== FILE: src/main/resources/db/migration/V10__Add_foreign_key_constraint_to_products.sql ====
+ALTER TABLE products
+ADD CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES categories(id);
+
+==== FILE: src/main/resources/db/migration/V5__Add_description_to_initialized_products.sql ====
+UPDATE products
+SET description = ("Dit specifieke boek komt daarom niet in aanmerking voor betaling in termijnen.
+
+                    Je kunt het uiteraard wél toevoegen aan je bestelling samen met andere boeken die wél op afbetaling beschikbaar zijn.
+
+                    In dit boekje Belangrijke lessen voor de gehele gemeenschap van de voormalige moefti van Saoedi-Arabië, shaykh al islaam ‘Abdul-‘Aziez Ibn Baaz, leert de lezer op beknopte wijze de fundamenten van de religie. De Shaykh tracht op een simpele, begrijpelijke manier de verplichte kennis te verduidelijken betreffende onder andere:
+
+                    -de pilaren van islaam & imaan
+                    -de vormen van Tawhied
+                    -hoofdstukken uit de Qoraan
+                    -de reiniging
+                    -het gebed
+                    -de islamitische karaktereigenschappen
+                    -afgoderij en verschillende zonden
+                    -de regelgevingen met betrekking tot de dodenwassing en het dodengebed")
+WHERE id = 1;
+UPDATE products
+SET description = ("Elke moslim zal zeggen van de Profeet Mohammed (vrede en zegeningen zij met hem) te houden. Maar wie was hij? Waarom werd hij naar ons gezonden? Hoe was zijn karakter?
+
+                    De Profeet Mohammed (vrede en zegeningen zij met hem) werd als voorbeeld naar de mensheid gestuurd. Het eigen maken van zijn karakter moet ons streven zijn. Maar wat weet je eigenlijk van zijn karakter? Om je daarbij te helpen hebben wij van Ibn Baaz Bookstore het gerenommeerde boek ‘Een blik op het karakter van de edele Boodschapper’ van de prominente geleerde ‘Abdoel-Mohsin al-‘Abbaad naar helder Nederlands vertaald
+
+                    Op bovenstaande vragen en veel meer geeft shaykh ‘Abdoel-Mohsin al-‘Abbaad een antwoord in dit prachtige boek. Een must-have voor elke moslim, en een aanrader voor nieuwe moslims of mensen die geïnteresseerd zijn in de islaam.
+
+")
+WHERE id = 2;
+UPDATE products
+SET description = ("De klassieker van een van de vroege hanbalie-geleerden, nu voor het eerst in het Nederlands verkrijgbaar.
+
+                    Ontdek een van de belangrijkste werken uit de islamitische geschiedenis omtrent de geloofsleer. Uitleg van de geloofsleer (Ar. Sharh as-soennah) legt het verschil tussen de zuivere soennah en innovaties in heldere taal uit, met veel voorbeelden die voor de hedendaagse lezer herkenbaar zullen zijn. Het toont aan dat de geloofsleer van de grote imaams van de vier wetscholen één was, en meningsverschillen alleen in fiqh-kwesties kunnen bestaan. Dit boek is een nekslag voor de mensen van innovaties en degenen die de zuivere geloofsleer willen vermengen met leringen die niet voortkomen uit de soennah van de Profeet (sallallaahoe alaihi wasallam).
+
+                    In dit boek zijn verschillende verhelderende voetnoten toegevoegd die ontleend zijn aan de uitleggen van grote geleerden zoals shaykh Saalih al-Fawzaan en shaykh Ahmed an-Nadjmie. Daarnaast zijn er voetnoten toegevoegd van shaykh Khaalid ar-Raddaadie, die de inhoud van het boek geverifieerd heeft.
+
+                    Over de auteur: Al-Barbahaarie (overl. 4de eeuw na hidjrah/10de eeuw n. Chr.) was een leerling van studenten van imaam Ahmed bin Hanbal, en hij behoort dan ook tot een van de belangrijkste hanbalie-geleerden. Hij leefde in dezelfde tijd als de grote imaams, van wie hij hun zuivere geloofsleer overnam. Hij stond bekend om het verdedigen van de geloofsleer van de selef, en het bestrijden van dwalende groeperingen middels correcte kennis. Waar hij kwam was hij populair onder het volk, en onder zijn leringen werden zonden en innovaties massaal bestreden.
+
+")
+WHERE id = 3;
+
+==== FILE: src/main/resources/db/migration/V7__Insert_initial_categories.sql ====
+INSERT INTO categories(name) values
+    ("FIQH"),
+    ("AQEEDAH"),
+    ("SEERAH"),
+    ("TAFSEER"),
+    ("QURAN"),
+    ("HADEETH");
+
+==== FILE: src/main/resources/db/migration/V11__Add_not_null_constraint_to_category_id_column.sql ====
+ALTER TABLE products
+MODIFY COLUMN category_id BIGINT NOT NULL;
+
+==== FILE: src/main/resources/db/migration/V3__Make_product_name_unique.sql ====
+ALTER TABLE products
+    ADD UNIQUE (name);
+
+==== FILE: src/main/resources/db/migration/V2__Insert_initial_products.sql ====
+INSERT INTO products(name, price) VALUES
+    ("Belangrijke lessen voor de gehele gemeenschap", 7.5),
+    ("Een blik op het karakter van de edele boodschapper", 5.66),
+    ("Uitleg van de geloofsleer- Sharh as-soennah", 6.66);
+
+==== FILE: src/main/resources/db/migration/V4__Add_description_to_products.sql ====
+ALTER TABLE products
+    ADD COLUMN description TEXT;
+
+==== FILE: src/main/resources/db/migration/V8__Add_category_fk_to_product_table.sql ====
+ALTER TABLE products
+ADD COLUMN category_id BIGINT;
+
+==== FILE: src/main/resources/db/migration/V6__Create_category_table.sql ====
+CREATE TABLE categories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+==== FILE: src/main/resources/db/migration/V1__Create_product_table.sql ====
+CREATE TABLE products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_product_name ON products(name);
+
+==== FILE: src/main/resources/application.yml ====
+spring:
+  application:
+    name: product-catalog-api
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/catalog
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver # Good practice to be explicit
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 ==== FILE: src/test/java/com/example/product_catalog_api/ProductCatalogApiApplicationTests.java ====
 package com.example.product_catalog_api;

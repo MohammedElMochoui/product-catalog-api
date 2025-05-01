@@ -31,7 +31,7 @@ public class ProductController {
         return ResponseEntity.ok(allProducts);
     }
 
-    @GetMapping
+    @GetMapping(params = "name")
     public ResponseEntity<GetProductResponseDTO> getProductByName(@RequestParam String name) {
         GetProductResponseDTO getProductResponseDTO = productService.getProduct(name);
         return ResponseEntity.ok(getProductResponseDTO);
@@ -46,7 +46,7 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<CreateProductResponseDTO> createProduct(@Valid @RequestBody CreateProductRequestDTO body) {
         CreateProductResponseDTO createProductResponseDTO = productService.createProduct(body.name(), body.price(), body.category(), body.description());
-        URI location = URI.create("product/" + createProductResponseDTO.id());
+        URI location = URI.create("products/" + createProductResponseDTO.id());
         return ResponseEntity.created(location).body(createProductResponseDTO);
     }
 
@@ -60,7 +60,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<DeleteProductResponseDTO> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         DeleteProductResponseDTO deleteProductResponseDTO = productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }

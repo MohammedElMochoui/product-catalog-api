@@ -9,6 +9,9 @@ import com.example.product_catalog_api.model.CategoryEnum;
 import com.example.product_catalog_api.model.Product;
 import com.example.product_catalog_api.repository.CategoryRepository;
 import com.example.product_catalog_api.repository.ProductRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,10 +32,10 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public GetProductsResponseDTO getAllProducts(){
-        List<Product> products = productRepository.findAll();
-        List<GetProductResponseDTO> responses = products.stream().map(productMapper::productToGetProductResponseDTO).toList();
-        return new GetProductsResponseDTO(responses.size(), responses);
+    public Page<GetProductResponseDTO> getAllProducts(Pageable pageable){
+        Page<Product> products = productRepository.findAll(pageable);
+        List<GetProductResponseDTO> responses = products.getContent().stream().map(productMapper::productToGetProductResponseDTO).toList();
+        return new PageImpl<>(responses, products.getPageable(), products.getTotalElements());
     }
 
     @Transactional(readOnly = true)

@@ -1,12 +1,11 @@
 package com.example.product_catalog_api;
 
-import com.example.product_catalog_api.exception.AllFieldsAreNullException;
-import com.example.product_catalog_api.exception.CantFindCategoryException;
-import com.example.product_catalog_api.exception.CantFindProductException;
+import com.example.product_catalog_api.product.exception.AllFieldsAreNullException;
+import com.example.product_catalog_api.product.exception.CantFindCategoryException;
+import com.example.product_catalog_api.product.exception.CantFindProductException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;

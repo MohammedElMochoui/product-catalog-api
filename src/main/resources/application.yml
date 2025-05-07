@@ -15,3 +15,15 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: bYcpEt9e+uuTZhmn8+Vc/2Zmbx40I+wZToqRpVCRYMVvbncHQZoW52G3wEw6NqwaNP46E5KzTbJmoG/1GuxgAA/32hKgPaJNP6ufWLdvG46DauDq3GrnbV/TEhvgksYlhfD3dDu5meimTVBokgTUx/U149csa8OY5o39Fs35ZF1Mf8RNkMPQFRaJYdVs7BVHB6zYKOjmX23SrH1QSHLUOfCsGL7pre+enVfe5DJFwffUwfWOtD6nurfjKSMt83Yf1S2amQIdRlpLvodY0pCRYe9tjnmxPsywCktye15mub+uDD0dV9LDAf99Oh4sSza97O2wtExoj5N+1RD2ofuM
+    expiration-ms: 3600000
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+

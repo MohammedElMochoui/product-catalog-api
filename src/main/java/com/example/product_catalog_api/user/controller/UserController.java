@@ -1,29 +1,30 @@
 package com.example.product_catalog_api.user.controller;
 
-import com.example.product_catalog_api.security.JwtTokenProvider;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.product_catalog_api.user.dto.request.LoginRequestDTO;
+import com.example.product_catalog_api.user.dto.request.RegisterRequestDTO;
+import com.example.product_catalog_api.user.service.UserService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("auth")
+@RequestMapping("/auth")
 public class UserController {
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
+    private final UserService userService;
 
-    public UserController(JwtTokenProvider jwtTokenProvider, UserDetailsService userDetailsService) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userDetailsService = userDetailsService;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    @GetMapping
-    public String getToken() {
-        UserDetails user = userDetailsService.loadUserByUsername("user");
-        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-        return jwtTokenProvider.generateToken(authentication);
+    @GetMapping("/login")
+    public ResponseEntity<String> getToken(@RequestBody LoginRequestDTO loginRequestDTO) {
+        String token = userService.loginUser(loginRequestDTO.username(), loginRequestDTO.password());
+        return ResponseEntity.ok(token);
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> registerUser(@RequestBody RegisterRequestDTO registerRequestDTO) {
+        userService.registerUser(registerRequestDTO.username(), registerRequestDTO.password());
+        return ResponseEntity.ok("User with username " + registerRequestDTO.username() + " registered successfully!");
+    }
+
 }

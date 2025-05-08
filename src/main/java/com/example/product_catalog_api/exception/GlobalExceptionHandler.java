@@ -1,5 +1,6 @@
-package com.example.product_catalog_api;
+package com.example.product_catalog_api.exception;
 
+import com.example.product_catalog_api.dto.ErrorDetails;
 import com.example.product_catalog_api.product.exception.AllFieldsAreNullException;
 import com.example.product_catalog_api.product.exception.CantFindCategoryException;
 import com.example.product_catalog_api.product.exception.CantFindProductException;

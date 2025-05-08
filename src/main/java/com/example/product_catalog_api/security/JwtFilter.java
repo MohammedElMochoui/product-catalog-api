@@ -49,7 +49,7 @@ public class JwtFilter extends OncePerRequestFilter {
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (!shouldFilter(request) || request.getHeader("Authorization") == null) {
+        if (shouldFilter(request) || request.getHeader("Authorization") == null) {
             filterChain.doFilter(request, response);
             return;
         }

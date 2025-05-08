@@ -1,6 +1,6 @@
 package com.example.product_catalog_api.product.repository;
 
-import com.example.product_catalog_api.product.model.Product;
+import com.example.product_catalog_api.product.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

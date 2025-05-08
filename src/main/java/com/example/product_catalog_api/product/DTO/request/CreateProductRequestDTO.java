@@ -1,6 +1,6 @@
 package com.example.product_catalog_api.product.DTO.request;
 
-import com.example.product_catalog_api.product.model.CategoryEnum;
+import com.example.product_catalog_api.product.entity.CategoryEnum;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

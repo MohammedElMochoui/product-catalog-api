@@ -5,7 +5,7 @@ import com.example.product_catalog_api.product.DTO.response.CreateProductRespons
 import com.example.product_catalog_api.product.DTO.response.DeleteProductResponseDTO;
 import com.example.product_catalog_api.product.DTO.response.GetProductResponseDTO;
 import com.example.product_catalog_api.product.DTO.response.UpdateProductResponseDTO;
-import com.example.product_catalog_api.product.model.Product;
+import com.example.product_catalog_api.product.entity.Product;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;

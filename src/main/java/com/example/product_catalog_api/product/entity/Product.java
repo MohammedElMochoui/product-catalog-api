@@ -1,4 +1,4 @@
-package com.example.product_catalog_api.product.model;
+package com.example.product_catalog_api.product.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
